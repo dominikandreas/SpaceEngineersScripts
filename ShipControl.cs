@@ -14,9 +14,9 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 
-namespace IngameScript
+namespace ShipControl
 {
-    public class Program2 : MyGridProgram
+    public class Program : MyGridProgram
     {
         #endregion
         //To put your code in a PB copy from this comment...

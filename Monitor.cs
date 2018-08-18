@@ -14,18 +14,23 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 
-namespace IngameScript
+namespace Monitor
 {
     public class Program : MyGridProgram
     {
         #endregion
-        //To put your code in a PB copy from this comment...
+        const string LCD_PANEL_NAME_ENERGY = "LCD-Monitor-Energy";
+        const string LCD_PANEL_NAME_INVENTORY = "LCD-Monitor-Inventory";
+        const string GRID_NAME = "BaseMoon";
+
         List<IMyTerminalBlock> tBlocks = new List<IMyTerminalBlock>();
         List<IMyBatteryBlock> bBlocks = new List<IMyBatteryBlock>();
         List<IMySolarPanel> sBlocks = new List<IMySolarPanel>();
         List<IMyReactor> rBlocks = new List<IMyReactor>();
+
         float E_lasttick = 0.0f;
         DateTime T_lasttick = DateTime.Now;
+
         public Program()
         {
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
@@ -43,9 +48,8 @@ namespace IngameScript
 
         public void Main(string argument)
         {
-            var lcd1 = GridTerminalSystem.GetBlockWithName("MVI-Panel-1") as IMyTextPanel;
-            var lcd2 = GridTerminalSystem.GetBlockWithName("MVI-Panel-2") as IMyTextPanel;
-            var refinery = GridTerminalSystem.GetBlockWithName("MVI-Refinery-1") as IMyRefinery;
+            var lcd1 = GridTerminalSystem.GetBlockWithName(LCD_PANEL_NAME_INVENTORY) as IMyTextPanel;
+            var lcd2 = GridTerminalSystem.GetBlockWithName(LCD_PANEL_NAME_ENERGY) as IMyTextPanel;
             var itemStatus = new SortedDictionary<string, Dictionary<string, VRage.MyFixedPoint>>();
 
             var E_current = 0.0f;
@@ -93,34 +97,24 @@ namespace IngameScript
                             else
                             {
                                 itemStatus[k]["ore"] += item.Amount;
-                                if(k != "Ice" && k != "Stone"){
-                                    if(inventory != refinery.GetInventory(0)){
-                                        // Move every ore except ice and stone into refinery
-                                        inventory.TransferItemTo(refinery.GetInventory(0), (int)item.ItemId, stackIfPossible:true);
-                                    }
-                                }
                             }
                         }
                     }
                 }
             }
 
-            foreach (IMyBatteryBlock block in bBlocks)
-            {
+            bBlocks.ForEach(block => {
                 E_current += block.CurrentStoredPower;
                 E_max += block.MaxStoredPower;
                 P_battery_in += block.CurrentInput;
                 P_battery_out += block.CurrentOutput;
-            }
+            });
 
-            foreach (IMySolarPanel block in sBlocks)
-            {
-                P_solarpanel += block.CurrentOutput;
-            }
+            sBlocks.ForEach(block => P_solarpanel += block.CurrentOutput);
 
             foreach (IMyReactor block in rBlocks)
             {
-                if(block.CubeGrid.Name == "EarthEasyStation"){
+                if(block.CubeGrid.Name == GRID_NAME){
                     block.Enabled = P_solarpanel < 1 && E_current/E_max < 0.8;
                 }
                 P_reactor += block.CurrentOutput;
@@ -151,9 +145,12 @@ namespace IngameScript
             var dT = (DateTime.Now - T_lasttick).Milliseconds;
 
             var dP = dE * 30000 / dT;
+            var pE = (float) E_current/E_max;
+
+            //lcd2.SetValue("FontColor", new Color((int) System.Math.Max(1.0f, 1.0f-2*(pE-0.5f))*255, (int) System.Math.Max(2*pE, 1.0f)*255, 0));
 
             lcd2.WritePublicText("Capacity:   \n" + E_current.ToString() + " / " + E_max.ToString() + " MWh \n");
-            lcd2.WritePublicText("@ " + dP + " MWh per minute\n", append: true);
+            lcd2.WritePublicText("@ " + dP + " MWh/min\n", append: true);
             if (dP > 0)
             {
                 lcd2.WritePublicText("Full in " + (E_max - E_current) / dP + " min!\n\n", append: true);
