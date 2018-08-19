@@ -33,7 +33,6 @@ namespace SortingScript2
         List<IMyTerminalBlock> oxyGenerators = new List<IMyTerminalBlock>();
         List<IMyTerminalBlock> refineries = new List<IMyTerminalBlock>();
 
-
         // variable list to hold target containers
         List<IMyTerminalBlock> targetContainers = new List<IMyTerminalBlock>();
 
@@ -95,20 +94,12 @@ namespace SortingScript2
 
             lcdPanel = GridTerminalSystem.GetBlockWithName(lcdPanelName) as IMyTextPanel;
 
-            if (lcdPanel == null)
-            {
-                log("panel is null!");
-                return;
-            }
-
             log("initialized", debug: true);
 
             SortContainerComponents(containers, containers, 0);
             // Only process the second inventory of assemblers
             SortContainerComponents(assemblers, containers, 1);
-            log("number of refineries: " + refineries.Count.ToString());
             SortContainerComponents(refineries, containers, 1);
-            log("refinery name: " + refineries[0].CustomName);
             SortContainerComponents(connectors, containers, 0);
             SortContainerComponents(oxyGenerators, containers, 0);
 
@@ -118,9 +109,7 @@ namespace SortingScript2
         {
             foreach (IMyTerminalBlock container in containers)
             {
-                IMyInventory inv = container.GetInventory();
-
-                if (!inv.IsFull)
+                if (!container.GetInventory().IsFull)
                     return container;
             }
 
@@ -189,7 +178,7 @@ namespace SortingScript2
                         log("checking " + item.Content.ToString(), debug: true);
                         foreach (var targetItemType in typesForTransfer)
                         {
-                            if (item.Content.ToString().Contains(targetItemType))
+                            if (item.Content.ToString().Contains(targetItemType) && item.Content.SubtypeId.ToString() != "Ice")
                             {
                                 log(" transferring " + item.Amount + " " + item.Content.TypeId, debug: false);
                                 itemCount += 1;

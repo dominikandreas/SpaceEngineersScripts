@@ -46,6 +46,35 @@ namespace Monitor
             return s.PadRight(l, ' ');
         }
 
+        public string MetricFormat(VRage.MyFixedPoint fp, string formatter = "{0:f2}")
+        {
+            string postfix = " Kg";
+            float T = 1000, KT = 1000 * T, MT = 1000 * KT;
+            float f = ((float)fp.ToIntSafe()) / 1000;
+            if (f / T > 1)
+            {
+                if (f / KT > 1)
+                {
+                    if (f % MT > 1)
+                    {
+                        f /= MT;
+                        postfix = " MT";
+                    }
+                    else
+                    {
+                        f /= KT;
+                        postfix = " KT";
+                    }
+                } else
+                {
+                    f /= T;
+                    postfix = " T";
+                }
+               
+            }
+            return fill(string.Format(formatter, f), 7) + postfix;
+        }
+
         public void Main(string argument)
         {
             var lcd1 = GridTerminalSystem.GetBlockWithName(LCD_PANEL_NAME_INVENTORY) as IMyTextPanel;
@@ -128,8 +157,8 @@ namespace Monitor
             {
                 if(entry.Key.ToString() == "Ice") continue;
                 lcd1.WritePublicText("\n" + fill(entry.Key.ToString(), 10), append: true);
-                lcd1.WritePublicText(fill(entry.Value["ore"].ToString(), 15) + " -> ", append: true);
-                lcd1.WritePublicText(fill(entry.Value["ingot"].ToString(), 15), append: true);
+                lcd1.WritePublicText(fill(MetricFormat(entry.Value["ore"]), 15) + " -> ", append: true);
+                lcd1.WritePublicText(fill(MetricFormat(entry.Value["ingot"]), 15), append: true);
                 if (entry.Value["ingot"] == 0)
                 {
                     lcd1.WritePublicText("\uE002", append: true);
