@@ -135,7 +135,7 @@ namespace SortingScript2
             foreach (var line in container.CustomData.Trim().Split('\n'))
             {
                 if (line.Trim().StartsWith("-"))
-                    items.Add(line.Trim());
+                    items.Add(line.Trim().Substring(1));
             }
             return items;
         }
@@ -185,7 +185,7 @@ namespace SortingScript2
             float K = 1000, T = 1000 * K, KT = 1000 * T, MT = 1000 * KT;
             float f = ((float)fp.ToIntSafe());
 
-            var postfixes = new List<String> { "g", "kg", "T", "kT", "MT" };
+            var postfixes = new List<String> { "", "k", "M", "G", "P" };
 
             int i = 0;
             while (f / 1000 > 1)
@@ -206,7 +206,7 @@ namespace SortingScript2
                         continue;
 
                     var typesForTransfer = GetItemTypesForTransfer(source, target);
-                    var targetIgnoreItemTypes = GetBlacklistedItems(target);
+                    var targetIgnoredItemTypes = GetBlacklistedItems(target);
 
                     log("transferring " + string.Join(", ", typesForTransfer) + " between " + source.CustomName + " and " + target.CustomName, debug: true);
 
@@ -219,12 +219,14 @@ namespace SortingScript2
                     for (int si = 0; si < sourceItems.Count; si++)
                     {
                         var item = sourceItems[si];
+                        if (item.Amount < 100)
+                            continue;
 
                         log("checking " + item.Content.ToString(), debug: true);
 
                         string itemClassName = item.Content.ToString(), itemName = item.Content.SubtypeId.ToString();
                         bool allowed = CheckOccurrence(itemClassName, typesForTransfer) || CheckOccurrence(itemName, typesForTransfer);
-                        allowed = allowed && !(CheckOccurrence(itemClassName, targetIgnoreItemTypes) || CheckOccurrence(itemName, targetIgnoreItemTypes));
+                        allowed = allowed && !(CheckOccurrence(itemClassName, targetIgnoredItemTypes) || CheckOccurrence(itemName, targetIgnoredItemTypes));
 
                         if (allowed)
                         {
@@ -235,7 +237,7 @@ namespace SortingScript2
 
                     }
                     if (itemCount > 0)
-                        log(source.CustomName + " > " + target.CustomName + " " + string.Join(",", transferredItems));
+                        log(source.CustomName + " > " + target.CustomName + ": " + string.Join(",", transferredItems));
                 }
             }
 
