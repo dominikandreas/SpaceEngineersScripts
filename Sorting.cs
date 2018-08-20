@@ -123,7 +123,19 @@ namespace SortingScript2
             List<String> items = new List<string>();
             foreach (var line in container.CustomData.Trim().Split('\n'))
             {
-                items.Add(line.Trim());
+                if (!line.Trim().StartsWith("-"))
+                    items.Add(line.Trim());
+            }
+            return items;
+        }
+
+        List<String> GetBlacklistedItems(IMyTerminalBlock container)
+        {
+            List<String> items = new List<string>();
+            foreach (var line in container.CustomData.Trim().Split('\n'))
+            {
+                if (line.Trim().StartsWith("-"))
+                    items.Add(line.Trim());
             }
             return items;
         }
@@ -154,37 +166,47 @@ namespace SortingScript2
             return typesForTransfer;
         }
 
+        bool CheckOccurrence(string itemName, List<string> listOfStrings)
+        {
+            foreach (var entry in listOfStrings)
+                if (itemName.Contains(entry))
+                    return true;
+            return false;
+        }
+
         void SortContainerComponents(List<IMyTerminalBlock> sourceBlocks, List<IMyTerminalBlock> targetContainers, int inventoryIndex)
         {
             foreach (var source in sourceBlocks)
             {
                 foreach (var target in FilterSortingContainers(targetContainers))
                 {
-                    if (source == null || target == null || source == target || source.GetInventory() == null || target.GetInventory() == null)
+                    if (source == null || target == null || source == target || source.GetInventory(inventoryIndex) == null || target.GetInventory() == null)
                         continue;
 
                     var typesForTransfer = GetItemTypesForTransfer(source, target);
-
-                    debugLogging = string.Join(", ", typesForTransfer).Contains("Ingot");
+                    var targetIgnoreItemTypes = GetBlacklistedItems(target);
 
                     log("transferring " + string.Join(", ", typesForTransfer) + " between " + source.CustomName + " and " + target.CustomName, debug: true);
 
                     int itemCount = 0;
 
-                    var sourceItems = source.GetInventory().GetItems();
+                    var sourceItems = source.GetInventory(inventoryIndex).GetItems();
                     for (int si = 0; si < sourceItems.Count; si++)
                     {
                         var item = sourceItems[si];
                         log("checking " + item.Content.ToString(), debug: true);
-                        foreach (var targetItemType in typesForTransfer)
+
+                        string itemClassName = item.Content.ToString(), itemName = item.Content.SubtypeId.ToString();
+                        bool allowed = CheckOccurrence(itemClassName, typesForTransfer) || CheckOccurrence(itemName, typesForTransfer);
+                        allowed = allowed && !(CheckOccurrence(itemClassName, targetIgnoreItemTypes) || CheckOccurrence(itemName, targetIgnoreItemTypes));
+
+                        if (allowed)
                         {
-                            if (item.Content.ToString().Contains(targetItemType) && item.Content.SubtypeId.ToString() != "Ice")
-                            {
-                                log(" transferring " + item.Amount + " " + item.Content.TypeId, debug: false);
-                                itemCount += 1;
-                                source.GetInventory().TransferItemTo(target.GetInventory(), si, null, true, null);
-                            }
+                            log(" transferring " + item.Amount + " " + item.Content.TypeId, debug: false);
+                            itemCount += 1;
+                            source.GetInventory(inventoryIndex).TransferItemTo(target.GetInventory(), si, null, true, null);
                         }
+
                     }
                     if (itemCount > 0)
                         log(" transferred " + itemCount.ToString() + " items from " + source.CustomName + " to " + target.CustomName);
