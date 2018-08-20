@@ -174,6 +174,28 @@ namespace SortingScript2
             return false;
         }
 
+        public string fill(string s, int l)
+        {
+            return s.PadRight(l, ' ');
+        }
+
+        public string MetricFormat(VRage.MyFixedPoint fp, string formatter = "{0:f2}")
+        {
+            //string postfix = "g";
+            float K = 1000, T = 1000 * K, KT = 1000 * T, MT = 1000 * KT;
+            float f = ((float)fp.ToIntSafe());
+
+            var postfixes = new List<String> { "g", "kg", "T", "kT", "MT" };
+
+            int i = 0;
+            while (f / 1000 > 1)
+            {
+                i += 1;
+                f /= 1000;
+            }
+            return fill(string.Format(formatter, f), 5) + postfixes[i];
+        }
+
         void SortContainerComponents(List<IMyTerminalBlock> sourceBlocks, List<IMyTerminalBlock> targetContainers, int inventoryIndex)
         {
             foreach (var source in sourceBlocks)
@@ -191,9 +213,13 @@ namespace SortingScript2
                     int itemCount = 0;
 
                     var sourceItems = source.GetInventory(inventoryIndex).GetItems();
+
+                    List<string> transferredItems = new List<string>();
+
                     for (int si = 0; si < sourceItems.Count; si++)
                     {
                         var item = sourceItems[si];
+
                         log("checking " + item.Content.ToString(), debug: true);
 
                         string itemClassName = item.Content.ToString(), itemName = item.Content.SubtypeId.ToString();
@@ -202,14 +228,14 @@ namespace SortingScript2
 
                         if (allowed)
                         {
-                            log(" transferring " + item.Amount + " " + item.Content.TypeId, debug: false);
+                            transferredItems.Add(itemName + " " + MetricFormat(item.Amount, formatter: "{0:f1}"));
                             itemCount += 1;
                             source.GetInventory(inventoryIndex).TransferItemTo(target.GetInventory(), si, null, true, null);
                         }
 
                     }
                     if (itemCount > 0)
-                        log(" transferred " + itemCount.ToString() + " items from " + source.CustomName + " to " + target.CustomName);
+                        log(source.CustomName + " > " + target.CustomName + " " + string.Join(",", transferredItems));
                 }
             }
 

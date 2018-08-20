@@ -48,31 +48,19 @@ namespace Monitor
 
         public string MetricFormat(VRage.MyFixedPoint fp, string formatter = "{0:f2}")
         {
-            string postfix = " Kg";
-            float T = 1000, KT = 1000 * T, MT = 1000 * KT;
-            float f = ((float)fp.ToIntSafe()) / 1000;
-            if (f / T > 1)
+            //string postfix = "g";
+            float K = 1000, T = 1000 * K, KT = 1000 * T, MT = 1000 * KT;
+            float f = ((float)fp.ToIntSafe());
+
+            var postfixes = new List<String> { "g", "kg", "T", "kT", "MT" };
+
+            int i = 0;
+            while (f / 1000 > 1)
             {
-                if (f / KT > 1)
-                {
-                    if (f % MT > 1)
-                    {
-                        f /= MT;
-                        postfix = " MT";
-                    }
-                    else
-                    {
-                        f /= KT;
-                        postfix = " KT";
-                    }
-                } else
-                {
-                    f /= T;
-                    postfix = " T";
-                }
-               
+                i += 1;
+                f /= 1000;
             }
-            return fill(string.Format(formatter, f), 7) + postfix;
+            return fill(string.Format(formatter, f), 7) + " " + postfixes[i];
         }
 
         public void Main(string argument)
@@ -143,22 +131,23 @@ namespace Monitor
 
             foreach (IMyReactor block in rBlocks)
             {
-                if(block.CubeGrid.Name == GRID_NAME){
-                    block.Enabled = P_solarpanel < 1 && E_current/E_max < 0.8;
+                if (block.CubeGrid.Name == GRID_NAME)
+                {
+                    block.Enabled = P_solarpanel < 1 && E_current / E_max < 0.8;
                 }
                 P_reactor += block.CurrentOutput;
             }
 
             // Plot
 
-            lcd1.WritePublicText(fill("Type", 10) + fill("Ore", 15) + " -> Ingot");
+            lcd1.WritePublicText(fill("Type", 10) + fill("Ore", 10) + " -> Ingot");
 
             foreach (KeyValuePair<string, Dictionary<string, VRage.MyFixedPoint>> entry in itemStatus)
             {
-                if(entry.Key.ToString() == "Ice") continue;
+                if (entry.Key.ToString() == "Ice") continue;
                 lcd1.WritePublicText("\n" + fill(entry.Key.ToString(), 10), append: true);
-                lcd1.WritePublicText(fill(MetricFormat(entry.Value["ore"]), 15) + " -> ", append: true);
-                lcd1.WritePublicText(fill(MetricFormat(entry.Value["ingot"]), 15), append: true);
+                lcd1.WritePublicText(fill(MetricFormat(entry.Value["ore"]), 10) + " -> ", append: true);
+                lcd1.WritePublicText(fill(MetricFormat(entry.Value["ingot"]), 10), append: true);
                 if (entry.Value["ingot"] == 0)
                 {
                     lcd1.WritePublicText("\uE002", append: true);
@@ -174,7 +163,7 @@ namespace Monitor
             var dT = (DateTime.Now - T_lasttick).Milliseconds;
 
             var dP = dE * 30000 / dT;
-            var pE = (float) E_current/E_max;
+            var pE = (float)E_current / E_max;
 
             //lcd2.SetValue("FontColor", new Color((int) System.Math.Max(1.0f, 1.0f-2*(pE-0.5f))*255, (int) System.Math.Max(2*pE, 1.0f)*255, 0));
 
@@ -192,7 +181,7 @@ namespace Monitor
             lcd2.WritePublicText("Consumption: " + P_battery_out.ToString() + " MW\n", append: true);
             lcd2.WritePublicText("Balance:     " + (P_solarpanel + P_reactor - P_battery_out).ToString() + " MW\n", append: true);
 
-            E_lasttick = (3*E_lasttick + E_current)/4;
+            E_lasttick = (3 * E_lasttick + E_current) / 4;
             T_lasttick = DateTime.Now;
         }
         //to this comment.
